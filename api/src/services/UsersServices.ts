@@ -1,10 +1,10 @@
-import { compare, hash } from 'bcrypt';
-import { ICreate, IUpdate } from '../interfaces/UsersInterface';
-import { UsersRepository } from '../repositories/UsersRepository';
+import { compare, hash } from "bcrypt";
+import { ICreate, IUpdate } from "../interfaces/UsersInterface";
+import { UsersRepository } from "../repositories/UsersRepository";
 
-import { v4 as uuid } from 'uuid';
-import { s3 } from '../config/aws';
-import { sign, verify } from 'jsonwebtoken';
+import { v4 as uuid } from "uuid";
+import { s3 } from "../config/aws";
+import { sign, verify } from "jsonwebtoken";
 class UsersServices {
   private usersRepository: UsersRepository;
 
@@ -15,7 +15,7 @@ class UsersServices {
     const findUser = await this.usersRepository.findUserByEmail(email);
 
     if (findUser) {
-      throw new Error('User exists');
+      throw new Error("O usuário já existe");
     }
 
     const hashPassword = await hash(password, 10);
@@ -38,12 +38,12 @@ class UsersServices {
     if (oldPassword && newPassword) {
       const findUserById = await this.usersRepository.findUserById(user_id);
       if (!findUserById) {
-        throw new Error('User not found');
+        throw new Error("Usuário não encontrado");
       }
       const passwordMatch = compare(oldPassword, findUserById.password);
 
       if (!passwordMatch) {
-        throw new Error('Password invalid.');
+        throw new Error("Senha inválida.");
       }
       password = await hash(newPassword, 10);
 
@@ -53,7 +53,7 @@ class UsersServices {
       const uploadImage = avatar_url?.buffer;
       const uploadS3 = await s3
         .upload({
-          Bucket: 'semana-heroi',
+          Bucket: "bktsemana-heroi",
           Key: `${uuid()}-${avatar_url?.originalname}`,
           // ACL: 'public-read',
           Body: uploadImage,
@@ -63,37 +63,37 @@ class UsersServices {
       await this.usersRepository.update(name, uploadS3.Location, user_id);
     }
     return {
-      message: 'User updated successfully',
+      message: "Usuário atualizado com sucesso",
     };
   }
   async auth(email: string, password: string) {
     const findUser = await this.usersRepository.findUserByEmail(email);
     if (!findUser) {
-      throw new Error('User or password invalid.');
+      throw new Error("Usuário ou senha inválidos.");
     }
     const passwordMatch = await compare(password, findUser.password);
 
     if (!passwordMatch) {
-      throw new Error('User or password invalid.');
+      throw new Error("Usuário ou senha inválidos.");
     }
 
     let secretKey: string | undefined = process.env.ACCESS_KEY_TOKEN;
     if (!secretKey) {
-      throw new Error('There is no token key');
+      throw new Error("Não há chave de token");
     }
     let secretKeyRefreshToken: string | undefined =
       process.env.ACCESS_KEY_TOKEN_REFRESH;
     if (!secretKeyRefreshToken) {
-      throw new Error('There is no token key');
+      throw new Error("Não há chave de token");
     }
-
+    // token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImV1Z2ZsQGhvdG1haWwuY29tIiwiaWF0IjoxNjg2NjAwODE4LCJleHAiOjE2ODY2MDE0MTgsInN1YiI6IjYzMDJhNjMyLWNkMDgtNGY4Ni04YmY2LWQ4YjM4Y2QxNTliNCJ9.856mZuLix6IYvDmU9RWrqv64y8MzlTpwJZ4xAkqqOBs
     const token = sign({ email }, secretKey, {
       subject: findUser.id,
-      expiresIn: '60s',
+      expiresIn: "30m",
     });
     const refreshToken = sign({ email }, secretKeyRefreshToken, {
       subject: findUser.id,
-      expiresIn: '7d',
+      expiresIn: "7d",
     });
 
     return {
@@ -109,27 +109,27 @@ class UsersServices {
 
   async refresh(refresh_token: string) {
     if (!refresh_token) {
-      throw new Error('Refresh token missing');
+      throw new Error("Token de atualização ausente");
     }
     let secretKeyRefresh: string | undefined =
       process.env.ACCESS_KEY_TOKEN_REFRESH;
     if (!secretKeyRefresh) {
-      throw new Error('There is no refresh token key');
+      throw new Error("Não há chave de token de atualização");
     }
 
     let secretKey: string | undefined = process.env.ACCESS_KEY_TOKEN;
     if (!secretKey) {
-      throw new Error('There is no refresh token key');
+      throw new Error("Não há chave de token de atualização");
     }
     const verifyRefreshToken = verify(refresh_token, secretKeyRefresh);
 
     const { sub } = verifyRefreshToken;
 
     const newToken = sign({ sub }, secretKey, {
-      expiresIn: '1h',
+      expiresIn: "1h",
     });
     const refreshToken = sign({ sub }, secretKeyRefresh, {
-      expiresIn: '7d',
+      expiresIn: "7d",
     });
     return { token: newToken, refresh_token: refreshToken };
   }

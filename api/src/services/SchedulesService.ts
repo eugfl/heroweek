@@ -1,6 +1,6 @@
-import { ICreate } from '../interfaces/SchedulesInterface';
-import { getHours, isBefore, startOfHour } from 'date-fns';
-import { SchedulesRepository } from '../repositories/ServicesRepository';
+import { ICreate } from "../interfaces/SchedulesInterface";
+import { getHours, isBefore, startOfHour } from "date-fns";
+import { SchedulesRepository } from "../repositories/ServicesRepository";
 class SchedulesService {
   private schedulesRepository: SchedulesRepository;
   constructor() {
@@ -13,20 +13,20 @@ class SchedulesService {
 
     const hour = getHours(hourStart);
     if (hour <= 8 || hour >= 20) {
-      throw new Error('Create Schedule between 9 and 19.');
+      throw new Error("Criar Horário entre 9 e 19.");
     }
 
     if (isBefore(hourStart, new Date())) {
-      throw new Error('It is not allowed to schedule old date');
+      throw new Error("Não é permitido agendar data antiga");
     }
 
     const checkIsAvailable = await this.schedulesRepository.find(
       hourStart,
-      user_id,
+      user_id
     );
 
     if (checkIsAvailable) {
-      throw new Error('Schedule date is not available');
+      throw new Error("A data agendada não está disponível");
     }
     const create = await this.schedulesRepository.create({
       name,
@@ -42,24 +42,24 @@ class SchedulesService {
     return result;
   }
   async update(id: string, date: Date, user_id: string) {
-    console.log(
-      '🚀 ~ file: SchedulesService.ts:45 ~ SchedulesService ~ update ~ date:',
-      date,
-    );
+    // console.log(
+    //   '🚀 ~ file: SchedulesService.ts:45 ~ SchedulesService ~ update ~ date:',
+    //   date,
+    // );
     const dateFormatted = new Date(date);
     const hourStart = startOfHour(dateFormatted);
 
     if (isBefore(hourStart, new Date())) {
-      throw new Error('It is not allowed to schedule old date');
+      throw new Error(" Não é permitido agendar data antiga");
     }
 
     const checkIsAvailable = await this.schedulesRepository.find(
       hourStart,
-      user_id,
+      user_id
     );
 
     if (checkIsAvailable) {
-      throw new Error('Schedule date is not available');
+      throw new Error("A data agendada não está disponível");
     }
 
     const result = await this.schedulesRepository.update(id, date);
@@ -69,7 +69,7 @@ class SchedulesService {
     const checkExists = await this.schedulesRepository.findById(id);
 
     if (!checkExists) {
-      throw new Error('Schedule doenst exists');
+      throw new Error("Agendamento não existe");
     }
 
     const result = await this.schedulesRepository.delete(id);
